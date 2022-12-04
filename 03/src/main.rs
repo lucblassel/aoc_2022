@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 fn main() {
-    println!("Day 1:");
+    println!("Day 3:");
     let input = include_str!("../inputs/input.txt");
 
     let alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";

@@ -7,7 +7,7 @@ fn main() {
 
     for line in input.lines() {
         let (op_move, mut my_move) = line.split_at(1);
-        my_move = my_move.strip_prefix(" ").unwrap();
+        my_move = my_move.strip_prefix(' ').unwrap(); 
         moves.push((op_move, my_move));
 
         match my_move {
