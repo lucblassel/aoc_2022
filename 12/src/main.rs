@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    hash::Hash,
-};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 fn main() {
     let input = include_str!("../inputs/input.txt");
@@ -59,7 +56,11 @@ fn main() {
     let length = find_path(&adjacency, source, sink);
     println!("\t1) {length}");
 
-    let length_2 = sources.iter().map(|source| find_path(&adjacency, *source, sink)).min().unwrap();
+    let length_2 = sources
+        .iter()
+        .map(|source| find_path(&adjacency, *source, sink))
+        .min()
+        .unwrap();
     println!("\t2) {length_2}");
 }
 
@@ -68,33 +69,25 @@ fn find_path(
     source: (usize, usize),
     sink: (usize, usize),
 ) -> i32 {
-    let mut distances: HashMap<(usize, usize), i32> = HashMap::new();
-    let mut queue: Vec<(i32, (usize, usize))> = vec![];
+    let mut queue: VecDeque<(usize, usize)> = VecDeque::new();
+    queue.push_back(source);
+
+    let mut explored: HashSet<(usize, usize)> = HashSet::new();
+    explored.insert(source);
+
     let mut predecessors: HashMap<(usize, usize), (usize, usize)> = HashMap::new();
 
-    distances.insert(source, 0);
-    for node in adjacency.keys() {
-        if *node != source {
-            distances.insert(*node, 10_000);
+    'outer: while !queue.is_empty() {
+        let node = queue.pop_front().unwrap();
+        if node == sink {
+            break 'outer;
         }
-        queue.push((*distances.get(node).unwrap(), *node));
-    }
-
-    queue.sort();
-
-    while !queue.is_empty() {
-        let (_, node) = queue[0];
-        queue.remove(0);
         let neighbors = adjacency.get(&node).unwrap();
         for neighbor in neighbors {
-            let new_dist = distances.get(&node).unwrap() + 1;
-            if new_dist < *distances.get(neighbor).unwrap() {
-                distances.insert(*neighbor, new_dist);
+            if !explored.contains(neighbor) {
+                explored.insert(*neighbor);
                 predecessors.insert(*neighbor, node);
-                let index = queue.iter().position(|(_, node)| node == neighbor).unwrap();
-                queue.remove(index);
-                queue.push((new_dist, *neighbor));
-                queue.sort();
+                queue.push_back(*neighbor);
             }
         }
     }

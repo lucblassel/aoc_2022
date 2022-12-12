@@ -54,6 +54,6 @@ Benchmark 1: ./aoc-11
   Range (min … max):    13.1 ms …  17.1 ms    208 runs
  
 Benchmark 1: ./aoc-12
-  Time (mean ± σ):      5.829 s ±  0.143 s    [User: 5.742 s, System: 0.048 s]
-  Range (min … max):    5.674 s …  6.153 s    10 runs
+  Time (mean ± σ):      77.2 ms ±   3.0 ms    [User: 72.3 ms, System: 2.4 ms]
+  Range (min … max):    74.6 ms …  86.9 ms    34 runs
 ```
