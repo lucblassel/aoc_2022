@@ -1,12 +1,18 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use regex::Regex;
+
+struct Graph<'a> {
+    distances: HashMap<(&'a str, &'a str), i64>,
+    rates: HashMap<&'a str, i64>,
+    masks: HashMap<&'a str, i64>,
+}
 
 fn main() {
     let input = include_str!("../inputs/input.txt");
 
-    let mut paths: HashMap<&str, Vec<&str>> = HashMap::new();
-    let mut flow_rates: HashMap<&str, u32> = HashMap::new();
+    let mut graph: HashMap<&str, Vec<&str>> = HashMap::new();
+    let mut rates: HashMap<&str, i64> = HashMap::new();
 
     let flow_re = Regex::new(r"Valve ([A-Z]{2}) has flow rate=(\d+);").unwrap();
     let path_re = Regex::new(r"valves? (([A-Z]{2},? ?)*)").unwrap();
@@ -15,194 +21,94 @@ fn main() {
         let flow_cap = flow_re.captures(line).unwrap();
         let valve = flow_cap.get(1).unwrap().as_str();
         let rate = flow_cap.get(2).unwrap().as_str().parse().unwrap();
-        flow_rates.insert(valve, rate);
+        if rate != 0 {
+            rates.insert(valve, rate);
+        }
 
-        let path_cap = path_re.captures(line).unwrap();
-        let valves = path_cap.get(1).unwrap().as_str().split(", ").collect();
-        println!("{valve} ({rate}) -> {valves:?}");
-        paths.insert(valve, valves);
+        let valves = path_re
+            .captures(line)
+            .unwrap()
+            .get(1)
+            .unwrap()
+            .as_str()
+            .split(", ")
+            .collect();
+        graph.insert(valve, valves);
     }
 
-    let open = HashSet::from_iter(vec!["AA"]);
-    let mut visited: HashMap<(String, u8, u32), u32> = HashMap::new();
-    let flow = do_round("AA", 1, 0, open.clone(), &paths, &flow_rates, &mut visited);
-    println!("\t1) {flow}");
+    let masks: HashMap<&str, i64> =
+        HashMap::from_iter(rates.keys().enumerate().map(|(i, valve)| (*valve, 1 << i)));
 
-    let mut visited2: HashMap<((String, String), u8, u32), u32> = HashMap::new();
-    let flow = do_round_2(("AA", "AA"), 1, 0, open, &paths, &flow_rates, &mut visited2);
-    println!("\t2) {flow}");
+    let mut distances: HashMap<(&str, &str), i64> =
+        HashMap::from_iter(graph.keys().flat_map(|valve1| {
+            graph.keys().map(|valve2| {
+                if graph.get(valve1).unwrap().contains(valve2) {
+                    ((*valve1, *valve2), 1)
+                } else {
+                    ((*valve1, *valve2), 10_000)
+                }
+            })
+        }));
+
+    // Computing shortest distance between nodes
+    for v1 in graph.keys() {
+        for v2 in graph.keys() {
+            for v3 in graph.keys() {
+                let current = *distances.get(&(v2, v3)).unwrap();
+                let new = distances.get(&(v2, v1)).unwrap() + distances.get(&(v1, v3)).unwrap();
+
+                distances.insert((v2, v3), current.min(new));
+            }
+        }
+    }
+
+    let graph = Graph {
+        distances,
+        rates,
+        masks,
+    };
+
+    let mut cache = HashMap::new();
+    do_round("AA", 30, 0, 0, &mut cache, &graph);
+    let answer_1 = cache.values().max().unwrap();
+    println!("\t1) {answer_1}");
+
+    let mut cache = HashMap::new();
+    do_round("AA", 26, 0, 0, &mut cache, &graph);
+
+    let mut possible: Vec<i64> = vec![];
+    for (state1, flow1) in cache.iter() {
+        for (state2, flow2) in cache.iter() {
+            if (state1 & state2) == 0 {
+                possible.push(flow1 + flow2)
+            }
+        }
+    }
+    let answer_2 = possible.iter().max().unwrap();
+    println!("\t2) {answer_2}");
 }
 
 fn do_round(
     valve: &str,
-    minute: u8,
-    flow: u32,
-    open: HashSet<&str>,
-    paths: &HashMap<&str, Vec<&str>>,
-    rates: &HashMap<&str, u32>,
-    visited: &mut HashMap<(String, u8, u32), u32>,
-) -> u32 {
-    if let Some(flow) = visited.get(&(valve.to_owned(), minute, flow)) {
-        return *flow;
+    minutes: i64,
+    state: i64,
+    flow: i64,
+    cache: &mut HashMap<i64, i64>,
+    graph: &Graph,
+) {
+    let v = match cache.get(&state) {
+        None => flow.max(0),
+        Some(v) => flow.max(*v),
+    };
+    cache.insert(state, v);
+
+    for valve2 in graph.rates.keys() {
+        let minutes = minutes - graph.distances.get(&(valve, valve2)).unwrap() - 1;
+        let mask = graph.masks.get(valve2).unwrap();
+        if (mask & state) != 0 || minutes < 0 {
+            continue;
+        }
+        let flow = flow + minutes * graph.rates.get(valve2).unwrap();
+        do_round(valve2, minutes, state | mask, flow, cache, graph);
     }
-
-    if minute > 30 {
-        return flow;
-    };
-
-    // Add flow from open valves
-    let mut new_flow = flow
-        + open
-            .iter()
-            .map(|valve| rates.get(valve).unwrap())
-            .sum::<u32>();
-
-    // Move
-    let move_flow: u32 = paths
-        .get(valve)
-        .unwrap()
-        .iter()
-        .map(|valve| {
-            do_round(
-                valve,
-                minute + 1,
-                new_flow,
-                open.clone(),
-                paths,
-                rates,
-                visited,
-            )
-        })
-        .max()
-        .unwrap();
-    // Open current valve
-    let open_flow = if open.contains(valve) || *rates.get(valve).unwrap() == 0 {
-        0
-    } else {
-        let mut open = open;
-        open.insert(valve);
-        do_round(
-            valve,
-            minute + 1,
-            new_flow,
-            open.clone(),
-            paths,
-            rates,
-            visited,
-        )
-    };
-
-    new_flow = open_flow.max(move_flow);
-    visited.insert((valve.to_owned(), minute, flow), new_flow);
-
-    new_flow
-}
-
-fn do_round_2(
-    valves: (&str, &str),
-    minute: u8,
-    flow: u32,
-    open: HashSet<&str>,
-    paths: &HashMap<&str, Vec<&str>>,
-    rates: &HashMap<&str, u32>,
-    visited: &mut HashMap<((String, String), u8, u32), u32>,
-) -> u32 {
-    if let Some(flow) = visited.get(&((valves.0.to_owned(), valves.1.to_owned()), minute, flow)) {
-        return *flow;
-    }
-
-    if minute > 26 {
-        return flow;
-    };
-
-    // Add flow from open valves
-    let mut new_flow = flow
-        + open
-            .iter()
-            .map(|valve| rates.get(valve).unwrap())
-            .sum::<u32>();
-
-    // I move + elephant move
-    let flow_1 = paths
-        .get(valves.0)
-        .unwrap()
-        .iter()
-        .map(|valve_me| {
-            paths
-                .get(valves.1)
-                .unwrap()
-                .iter()
-                .map(|valve_elephant| {
-                    do_round_2(
-                        (valve_me, valve_elephant),
-                        minute + 1,
-                        new_flow,
-                        open.clone(),
-                        paths,
-                        rates,
-                        visited,
-                    )
-                })
-                .max()
-                .unwrap()
-        })
-        .max()
-        .unwrap();
-
-    // I open + elephant move
-    let mut open_1 = open.clone();
-    open_1.insert(valves.0);
-    let flow_2 = paths
-        .get(valves.1)
-        .unwrap()
-        .iter()
-        .map(|valve_elephant| {
-            do_round_2(
-                (valves.0, valve_elephant),
-                minute + 1,
-                new_flow,
-                open_1.clone(),
-                paths,
-                rates,
-                visited,
-            )
-        })
-        .max()
-        .unwrap();
-
-    // I move + elephant open
-    let mut open_2 = open.clone();
-    open_2.insert(valves.1);
-    let flow_3 = paths
-        .get(valves.0)
-        .unwrap()
-        .iter()
-        .map(|valve_me| {
-            do_round_2(
-                (valve_me, valves.1),
-                minute + 1,
-                new_flow,
-                open_2.clone(),
-                paths,
-                rates,
-                visited,
-            )
-        })
-        .max()
-        .unwrap();
-
-    // I open + elephant open
-    let mut open_3 = open.clone();
-    open_3.insert(valves.0);
-    open_3.insert(valves.1);
-    let flow_4 = do_round_2(valves, minute + 1, new_flow, open_3, paths, rates, visited);
-
-    new_flow = flow_1.max(flow_2).max(flow_3).max(flow_4);
-
-    visited.insert(
-        ((valves.0.to_owned(), valves.1.to_owned()), minute, flow),
-        new_flow,
-    );
-
-    new_flow
 }
