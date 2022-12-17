@@ -1,3 +1,4 @@
+use core::ops::RangeInclusive;
 use num::complex::Complex;
 use regex::Regex;
 use std::collections::HashSet;
@@ -10,7 +11,6 @@ struct Square {
     d: Complex<i64>,
 }
 
-#[allow(dead_code)]
 impl Square {
     fn contains_point(&self, point: &Complex<i64>) -> bool {
         let am = point - self.a;
@@ -53,19 +53,10 @@ struct Line {
     intercept: i64,
 }
 
-#[allow(dead_code)]
 impl Line {
-    fn new(slope: i64, intercept: i64) -> Self {
-        Line { slope, intercept }
-    }
-
     fn from_point(slope: i64, point: Complex<i64>) -> Self {
         let intercept = point.im - slope * point.re;
         Line { slope, intercept }
-    }
-
-    fn contains(&self, point: Complex<i64>) -> bool {
-        point.im == (self.slope * point.re + self.intercept)
     }
 
     fn intersection(&self, other: &Line) -> Option<Complex<i64>> {
@@ -83,6 +74,16 @@ fn dot(c1: Complex<i64>, c2: Complex<i64>) -> i64 {
     c1.re * c2.re + c1.im * c2.im
 }
 
+fn merge(range1: RangeInclusive<i64>, range2: RangeInclusive<i64>) -> Option<RangeInclusive<i64>> {
+    if range2.contains(range1.start()) || range1.contains(range1.start()) {
+        let start = range1.start().min(range2.start());
+        let end = range1.end().max(range2.end());
+        Some(*start..=*end)
+    } else {
+        None
+    }
+}
+
 fn main() {
     let input = include_str!("../inputs/input.txt");
     let regex =
@@ -90,9 +91,13 @@ fn main() {
             .unwrap();
 
     let mut sensors: Vec<(Complex<i64>, Complex<i64>)> = vec![];
-    let mut free_spots: HashSet<Complex<i64>> = HashSet::new();
+    let mut beacons = HashSet::new();
     let mut squares: Vec<Square> = vec![];
     let mut grid: Vec<Line> = vec![];
+    let y: i64 = 2_000_000;
+    let y_line = Line::from_point(0, Complex::new(0, y));
+
+    let mut ranges = vec![];
 
     for line in input.lines() {
         let cap = regex.captures(line).unwrap();
@@ -108,27 +113,53 @@ fn main() {
         sensors.push((sensor, beacon));
 
         let dist = (sensor - beacon).l1_norm();
-        let y: i64 = 2_000_000;
+
+        beacons.insert(beacon);
 
         let rect = Square::from_point(sensor, dist);
         grid.extend(rect.offset_edges().into_iter());
+
+        let mut xs: Vec<_> = rect
+            .offset_edges()
+            .iter()
+            .flat_map(|line| line.intersection(&y_line))
+            .map(|c| c.re)
+            .collect();
+        xs.sort();
+
         squares.push(rect);
         if sensor.im + dist < y || sensor.im - dist > y {
             continue;
         }
 
-        for x in -dist..=dist {
-            let coord = Complex::new(x + sensor.re, y);
-            if (coord - sensor).l1_norm() > dist {
-                continue;
-            }
-            if coord != beacon {
-                free_spots.insert(coord);
-            }
+        // Get correct boundary points
+        let mut left = Complex::new(xs[1] - 1, y);
+        let mut right = Complex::new(xs[2] + 1, y);
+        while (left - sensor).l1_norm() > dist {
+            left = Complex::new(left.re + 1, y);
+        }
+        while (right - sensor).l1_norm() > dist {
+            right = Complex::new(right.re - 1, y);
+        }
+
+        ranges.push((left.re, right.re));
+    }
+
+    ranges.sort();
+    let ranges: Vec<_> = ranges.iter().map(|(start, end)| *start..=*end).collect();
+    let mut merged_ranges = vec![ranges[0].clone()];
+    for range in ranges.iter().skip(1) {
+        let last = merged_ranges.pop().unwrap();
+        if let Some(merged) = merge(last.clone(), range.clone()) {
+            merged_ranges.push(merged);
+        } else {
+            merged_ranges.push(last);
         }
     }
 
-    let answer_1 = free_spots.len();
+    let merged = merged_ranges[0].clone();
+    let num_beacons = beacons.iter().filter(|c| c.im == y).count();
+    let answer_1 = merged.end() - merged.start() - num_beacons as i64 + 1;
     println!("\t1) {answer_1}");
 
     const MAX: i64 = 4_000_000;
@@ -139,7 +170,13 @@ fn main() {
         .flat_map(|l1| iter.clone().map(move |l2| l1.intersection(l2)))
         .flatten()
         .filter(|point| point.re >= 0 && point.re <= MAX && point.im >= 0 && point.im <= MAX) // check bounds
-        .find(|point| squares.iter().filter(|square|square.contains_point(point)).count() == 0)
+        .find(|point| {
+            squares
+                .iter()
+                .filter(|square| square.contains_point(point))
+                .count()
+                == 0
+        })
         .unwrap();
 
     println!("\t2) {}", point.re * 4000000 + point.im);
