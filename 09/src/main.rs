@@ -52,7 +52,7 @@ fn main() {
 
 fn get_new_coord(head: &Complex<i32>, tail: &Complex<i32>) -> Complex<i32> {
     if (head - tail).norm_sqr() <= 2 {
-        return tail.clone();
+        return *tail;
     }
 
     let diff = unit(head - tail);

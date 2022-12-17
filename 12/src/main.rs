@@ -16,15 +16,15 @@ fn main() {
             match c {
                 'S' => {
                     source = (x, y);
-                    heights.insert((x, y), ('a' as u8 - 97) as i32)
+                    heights.insert((x, y), 0)
                 }
                 'E' => {
                     sink = (x, y);
-                    heights.insert((x, y), ('z' as u8 - 97) as i32)
+                    heights.insert((x, y), 25)
                 }
                 'a' => {
                     sources.push((x, y));
-                    heights.insert((x, y), ('a' as u8 - 97) as i32)
+                    heights.insert((x, y), 0)
                 }
                 c => heights.insert((x, y), (c as u8 - 97) as i32),
             };
