@@ -9,6 +9,7 @@ struct Graph<'a> {
 }
 
 fn main() {
+    println!("Day 16:");
     let input = include_str!("../inputs/input.txt");
 
     let mut graph: HashMap<&str, Vec<&str>> = HashMap::new();

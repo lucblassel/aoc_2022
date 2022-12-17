@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
 fn main() {
+    println!("Day 12:");
     let input = include_str!("../inputs/input.txt");
 
     let mut adjacency: HashMap<(usize, usize), HashSet<(usize, usize)>> = HashMap::new();

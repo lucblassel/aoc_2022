@@ -85,6 +85,7 @@ fn merge(range1: RangeInclusive<i64>, range2: RangeInclusive<i64>) -> Option<Ran
 }
 
 fn main() {
+    println!("Day 15:");
     let input = include_str!("../inputs/input.txt");
     let regex =
         Regex::new(r"Sensor at x=(-?\d+), y=(-?\d+): closest beacon is at x=(-?\d+), y=(-?\d+)")

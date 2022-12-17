@@ -8,7 +8,7 @@ I am using AoC this year as a way to learn Rust, which I have been toying with t
 I used [hyperfine](https://github.com/sharkdp/hyperfine) with warmup to time my solutions for different days, compiled in `release` mode:  
 `hyperfine -N --warmup 100 <executable>`
 
-**Results**:
+**Individual Results**:
 
 ```
 Benchmark 1: ./aoc-01
@@ -74,4 +74,14 @@ Benchmark 1: ./aoc-15
 Benchmark 1: ./aoc-16
   Time (mean ± σ):     322.2 ms ±  11.7 ms    [User: 300.4 ms, System: 14.5 ms]
   Range (min … max):   309.4 ms … 343.3 ms    10 runs
+```
+
+**Total results:**
+```
+$ cargo build --release
+$ hyperfine -N './benchmark.sh'
+
+Benchmark 1: ./benchmark.sh
+  Time (mean ± σ):     624.8 ms ±  18.2 ms    [User: 556.5 ms, System: 41.6 ms]
+  Range (min … max):   606.7 ms … 659.5 ms    10 runs
 ```
