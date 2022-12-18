@@ -17,3 +17,4 @@
 ./target/release/aoc-15
 ./target/release/aoc-16
 ./target/release/aoc-17
+./target/release/aoc-18
