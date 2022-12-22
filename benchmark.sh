@@ -19,4 +19,5 @@
 ./target/release/aoc-17
 ./target/release/aoc-18
 # Skipped days go here!
+./target/release/aoc-20
 ./target/release/aoc-21
