@@ -90,6 +90,10 @@ Benchmark 1: ./aoc-20
 Benchmark 1: ./aoc-21
   Time (mean ± σ):       6.1 ms ±   8.5 ms    [User: 1.8 ms, System: 1.4 ms]
   Range (min … max):     3.9 ms … 186.3 ms    735 runs
+
+Benchmark 1: ./aoc-23
+  Time (mean ± σ):      1.275 s ±  0.013 s    [User: 1.249 s, System: 0.016 s]
+  Range (min … max):    1.264 s …  1.303 s    10 runs
 ```
 
 **Total results:**
@@ -98,6 +102,6 @@ $ cargo build --release
 $ hyperfine -N --warmup 30 './benchmark.sh'
 
 Benchmark 1: ./benchmark.sh
-  Time (mean ± σ):     794.7 ms ±   9.4 ms    [User: 705.7 ms, System: 53.1 ms]
-  Range (min … max):   781.1 ms … 812.9 ms    10 runs
+  Time (mean ± σ):      2.122 s ±  0.044 s    [User: 1.999 s, System: 0.072 s]
+  Range (min … max):    2.086 s …  2.215 s    10 runs
 ```
