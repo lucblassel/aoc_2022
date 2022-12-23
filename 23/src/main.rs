@@ -1,4 +1,5 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::VecDeque;
+use hashbrown::{HashMap, HashSet};
 
 use num::complex::Complex;
 
@@ -19,31 +20,48 @@ enum Move {
     East,
 }
 
-impl Move {
-    fn check_move(&self, position: &Complex<i32>, elves: &HashSet<Complex<i32>>) -> bool {
-        use Move::*;
-        match self {
-            North => {
-                !elves.contains(&(N + position))
-                    && !elves.contains(&(NE + position))
-                    && !elves.contains(&(NW + position))
-            }
-            South => {
-                !elves.contains(&(S + position))
-                    && !elves.contains(&(SE + position))
-                    && !elves.contains(&(SW + position))
-            }
-            West => {
-                !elves.contains(&(W + position))
-                    && !elves.contains(&(NW + position))
-                    && !elves.contains(&(SW + position))
-            }
-            East => {
-                !elves.contains(&(E + position))
-                    && !elves.contains(&(NE + position))
-                    && !elves.contains(&(SE + position))
+fn get_new_coords(
+    elf: &Complex<i32>,
+    elves: &HashSet<Complex<i32>>,
+    moves: &VecDeque<Move>,
+) -> Complex<i32> {
+    let free_n = !elves.contains(&(elf + N));
+    let free_s = !elves.contains(&(elf + S));
+    let free_e = !elves.contains(&(elf + E));
+    let free_w = !elves.contains(&(elf + W));
+    let free_ne = !elves.contains(&(elf + NE));
+    let free_nw = !elves.contains(&(elf + NW));
+    let free_se = !elves.contains(&(elf + SE));
+    let free_sw = !elves.contains(&(elf + SW));
+
+    if free_n && free_s && free_e && free_w && free_ne && free_nw && free_se && free_sw {
+        *elf
+    } else {
+        for considered_move in moves {
+            match considered_move {
+                Move::North => {
+                    if free_n && free_ne && free_nw {
+                        return elf + N;
+                    }
+                }
+                Move::South => {
+                    if free_s && free_se && free_sw {
+                        return elf + S;
+                    }
+                }
+                Move::West => {
+                    if free_w && free_nw && free_sw {
+                        return elf + W;
+                    }
+                }
+                Move::East => {
+                    if free_e && free_ne && free_se {
+                        return elf + E;
+                    }
+                }
             }
         }
+        *elf
     }
 }
 
@@ -60,44 +78,31 @@ fn main() {
                     elves.insert(Complex::new(row as i32, col as i32));
                 }
                 '.' => continue,
-                _ => unreachable!("Unknwon tile type: {char}"),
+                _ => unreachable!("Unknown tile type: {char}"),
             }
         }
     }
 
-    let mut move_order =
-        VecDeque::from_iter(vec![Move::North, Move::South, Move::West, Move::East]);
+    let mut moves = VecDeque::from_iter(vec![Move::North, Move::South, Move::West, Move::East]);
 
     let mut turn_counter = 0;
     loop {
         turn_counter += 1;
 
-        let mut proposed: HashMap<Complex<i32>, Vec<_>> = HashMap::new();
+        let mut proposed: HashMap<Complex<i32>, Vec<Complex<i32>>> =
+            HashMap::with_capacity(elves.len());
 
         // Propose moves
         for elf in elves.iter() {
-            let valid_moves: Vec<_> = move_order
-                .iter()
-                .filter(|selected_move| selected_move.check_move(elf, &elves))
-                .collect();
-
-            let new_coords = if valid_moves.len() == 4 || valid_moves.is_empty() {
-                *elf
-            } else {
-                match valid_moves[0] {
-                    Move::North => elf + N,
-                    Move::South => elf + S,
-                    Move::East => elf + E,
-                    Move::West => elf + W,
-                }
-            };
-
-            proposed.entry(new_coords).or_default().push(*elf);
+            proposed
+                .entry(get_new_coords(elf, &elves, &moves))
+                .or_default()
+                .push(*elf);
         }
 
         // Move elves
-        let mut new_elves = HashSet::new();
-        for (considered_move, elves) in proposed.into_iter() {
+        let mut new_elves = HashSet::with_capacity(elves.len());
+        for (considered_move, elves) in proposed.drain() {
             if elves.len() == 1 {
                 new_elves.insert(considered_move);
             } else {
@@ -114,8 +119,10 @@ fn main() {
 
         elves = new_elves;
 
-        let front_move = move_order.pop_front().unwrap();
-        move_order.push_back(front_move);
+        moves.rotate_left(1);
+
+        // let front_move = moves.pop_front().unwrap();
+        // moves.push_back(front_move);
 
         if turn_counter == 10 {
             println!("\t1) {}", count_ground(&elves));
