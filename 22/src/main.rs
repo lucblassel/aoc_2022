@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 
 use num::complex::Complex;
+use regex::Regex;
 
 const UP: Complex<i32> = Complex::new(-1, 0);
 const DOWN: Complex<i32> = Complex::new(1, 0);
 const LEFT: Complex<i32> = Complex::new(0, -1);
 const RIGHT: Complex<i32> = Complex::new(0, 1);
+
+const WIDTH: i32 = 50;
 
 #[derive(Debug)]
 enum Cell {
@@ -23,81 +26,43 @@ enum Cube {
     Six,
 }
 
-impl Cube {
-    fn get_new_face_coords(
-        &self,
-        direction: &Direction,
-        coord: Complex<i32>,
-    ) -> (Self, Direction, Complex<i32>) {
-        use Cube::*;
-        use Direction::*;
+// impl Cube {
+//     fn get_new_face_coords(
+//         &self,
+//         direction: &Direction,
+//         coord: Complex<i32>,
+//     ) -> (Self, Direction, Complex<i32>) {
+//         use Cube::*;
+//         use Direction::*;
 
-        let Complex { re: row, im: col } = coord;
+//         let Complex { re: row, im: col } = coord;
 
-        match (self, direction) {
-            (One, Up) => (Six, Right, Complex::new(0, row)),
-            (One, Down) => (Three, Down, Complex::new(row, 0)),
-            (One, Left) => (Four, Right, Complex::new(0, 49 - col)),
-            (One, Right) => (Two, Right, Complex::new(0, col)),
-            (Two, Up) => (Six, Up, Complex::new(row, 49)),
-            (Two, Down) => (Three, Left, Complex::new(49, row)),
-            (Two, Left) => (One, Left, Complex::new(49, col)),
-            (Two, Right) => (Five, Left, Complex::new(49, 49 - col)),
-            (Three, Up) => (One, Up, Complex::new(row, 49)),
-            (Three, Down) => (Five, Down, Complex::new(row, 0)),
-            (Three, Left) => (Four, Down, Complex::new(col, 0)),
-            (Three, Right) => (Two, Up, Complex::new(col, 49)),
-            (Four, Up) => (Three, Right, Complex::new(0, row)),
-            (Four, Down) => (Six, Down, Complex::new(row, 0)),
-            (Four, Left) => (One, Right, Complex::new(0, 49 - col)),
-            (Four, Right) => (Five, Right, Complex::new(0, col)),
-            (Five, Right) => (Two, Left, Complex::new(49, 49 - col)),
-            (Five, Up) => (Three, Up, Complex::new(row, 49)),
-            (Five, Left) => (Four, Left, Complex::new(49, col)),
-            (Five, Down) => (Six, Left, Complex::new(49, row)),
-            (Six, Left) => (One, Down, Complex::new(col, 0)),
-            (Six, Down) => (Two, Down, Complex::new(row, 0)),
-            (Six, Up) => (Four, Up, Complex::new(row, 49)),
-            (Six, Right) => (Five, Up, Complex::new(col, 49)),
-        }
-    }
-}
-
-// fn transition(
-//     from: Cube,
-//     orientation: Direction,
-//     row: i32,
-//     col: i32,
-// ) -> (Cube, Direction, Complex<i32>) {
-//     use Cube::*;
-//     use Direction::*;
-
-//    match (from, orientation) {
-//         (One, Up) => (Six, Right, Complex::new(0, row)),
-//         (One, Down) => (Three, Down, Complex::new(row, 0)),
-//         (One, Left) => (Four, Right, Complex::new(0, 49 - col)),
-//         (One, Right) => (Two, Right, Complex::new(0, col)),
-//         (Two, Up) => (Six, Up, Complex::new(row, 49)),
-//         (Two, Down) => (Three, Left, Complex::new(49, row)),
-//         (Two, Left) => (One, Left, Complex::new(49, col)),
-//         (Two, Right) => (Five, Left, Complex::new(49, 49 - col)),
-//         (Three, Up) => (One, Up, Complex::new(row, 49)),
-//         (Three, Down) => (Five, Down, Complex::new(row, 0)),
-//         (Three, Left) => (Four, Down, Complex::new(col, 0)),
-//         (Three, Right) => (Two, Up, Complex::new(col, 49)),
-//         (Four, Up) => (Three, Right, Complex::new(0, row)),
-//         (Four, Down) => (Six, Down, Complex::new(row, 0)),
-//         (Four, Left) => (One, Right, Complex::new(0, 49 - col)),
-//         (Four, Right) => (Five, Right, Complex::new(0, col)),
-//         (Five, Right) => (Two, Left, Complex::new(49, 49 - col)),
-//         (Five, Up) => (Three, Up, Complex::new(row, 49)),
-//         (Five, Left) => (Four, Left, Complex::new(49, col)),
-//         (Five, Down) => (Six, Left, Complex::new(49, row)),
-//         (Six, Left) => (One, Down, Complex::new(col, 0)),
-//         (Six, Down) => (Two, Down, Complex::new(row, 0)),
-//         (Six, Up) => (Four, Up, Complex::new(row, 49)),
-//         (Six, Right) => (Five, Up, Complex::new(col, 49)),
-//         _ => unreachable!(),
+//         match (self, direction) {
+//             (One, Up) => (Six, Right, Complex::new(2 * WIDTH + col, 0)), //
+//             (One, Down) => (Three, Down, Complex::new(row + 1, col)),
+//             (One, Left) => (Four, Right, Complex::new(3 * WIDTH - row, 0)),
+//             (One, Right) => (Two, Right, Complex::new(row, col + 1)),
+//             (Two, Up) => (Six, Up, Complex::new(4 * WIDTH - 1, col - 2 * WIDTH)), //
+//             (Two, Down) => (Three, Left, Complex::new(col - WIDTH, 2 * WIDTH - 1)),
+//             (Two, Left) => (One, Left, Complex::new(row, col - 1)),
+//             (Two, Right) => (Five, Left, Complex::new(col, 2 * WIDTH - 1)),
+//             (Three, Up) => (One, Up, Complex::new(row - 1, col)),
+//             (Three, Down) => (Five, Down, Complex::new(row + 1, col)),
+//             (Three, Left) => (Four, Down, Complex::new(2 * WIDTH, row - WIDTH)),
+//             (Three, Right) => (Two, Up, Complex::new(WIDTH - 1, row + WIDTH)),
+//             (Four, Up) => (Three, Right, Complex::new(WIDTH + col, WIDTH)),
+//             (Four, Down) => (Six, Down, Complex::new(row + 1, col)),
+//             (Four, Left) => (One, Right, Complex::new(WIDTH * 3 - row, WIDTH)),
+//             (Four, Right) => (Five, Right, Complex::new(row, col + 1)),
+//             (Five, Right) => (Two, Left, Complex::new(WIDTH * 3 - row, 3 * WIDTH - 1)),
+//             (Five, Up) => (Three, Up, Complex::new(row - 1, col)),
+//             (Five, Left) => (Four, Left, Complex::new(row, col - 1)),
+//             (Five, Down) => (Six, Left, Complex::new(2 * WIDTH + col, WIDTH - 1)),
+//             (Six, Left) => (One, Down, Complex::new(0, row - 2 * WIDTH)), //
+//             (Six, Down) => (Two, Down, Complex::new(0, col + 2 * WIDTH)), //
+//             (Six, Up) => (Four, Up, Complex::new(row - 1, col)),
+//             (Six, Right) => (Five, Up, Complex::new(3 * WIDTH - 1, row - 2 * WIDTH)),
+//         }
 //     }
 // }
 
@@ -140,14 +105,11 @@ impl Direction {
 }
 
 fn main() {
-    println!("Day 22: ");
     let input = include_str!("../inputs/input.txt");
-
     let mut set_cursor = true;
     let mut parse_password = false;
 
     let mut grid = HashMap::new();
-    let mut cube = HashMap::new();
     let mut password = "";
 
     let mut cursor_1 = Complex::new(0, 0);
@@ -185,8 +147,6 @@ fn main() {
                 _ => continue,
             };
 
-            let cube_coord = Complex::new(row as i32 % 50, col as i32 % 50);
-
             let cell_type = match cell {
                 '.' => Cell::Path,
                 '#' => Cell::Wall,
@@ -198,14 +158,7 @@ fn main() {
             min_row = min_row.min(row as i32);
             min_col = min_col.min(col as i32);
 
-            cube.insert(
-                (cube_face, cube_coord),
-                Complex::new(row as i32, col as i32),
-            );
-            grid.insert(
-                Complex::new(row as i32, col as i32),
-                (cell_type, cube_face, cube_coord),
-            );
+            grid.insert(Complex::new(row as i32, col as i32), (cell_type, cube_face));
         }
     }
 
@@ -214,34 +167,24 @@ fn main() {
         Complex::new(max_row, max_col),
     );
 
-    let mut distance = "".to_string();
-
-    for char in password.chars() {
-        if char.is_ascii_digit() {
-            distance.push_str(&format!("{char}"));
-        } else {
-            let turn = match char {
-                'L' => Turn::Left,
-                'R' => Turn::Right,
-                _ => unreachable!("Unknown turn instruction: '{char}'"),
-            };
-            let dist: i32 = distance.parse().unwrap();
-
+    let pwd_regex = Regex::new(r"(\d+)([RL]?)").unwrap();
+    for cap in pwd_regex.captures_iter(password) {
+        if let Some(dist) = cap.get(1) {
+            let dist: i32 = dist.as_str().parse().unwrap();
             cursor_1 = move_cursor(cursor_1, &direction_1, dist, &grid, &bounds);
-            (cursor_2, direction_2) =
-                move_cursor_on_cube(cursor_2, &direction_2, dist, &grid, &cube);
+            move_cursor_on_cube(dist, &mut cursor_2, &mut direction_2, &grid);
+        }
+        if let Some(rot) = cap.get(2) {
+            let turn = match rot.as_str() {
+                "L" => Turn::Left,
+                "R" => Turn::Right,
+                "" => continue,
+                _ => unreachable!("Unknown turn instruction: '{rot:?}'"),
+            };
 
             direction_1 = direction_1.turn(turn);
             direction_2 = direction_2.turn(turn);
-
-            distance = "".to_string();
         }
-    }
-
-    if !distance.is_empty() {
-        let dist: i32 = distance.parse().unwrap();
-        cursor_1 = move_cursor(cursor_1, &direction_1, dist, &grid, &bounds);
-        (cursor_2, direction_2) = move_cursor_on_cube(cursor_2, &direction_2, dist, &grid, &cube);
     }
 
     println!(
@@ -259,7 +202,7 @@ fn move_cursor(
     start: Complex<i32>,
     direction: &Direction,
     distance: i32,
-    grid: &HashMap<Complex<i32>, (Cell, Cube, Complex<i32>)>,
+    grid: &HashMap<Complex<i32>, (Cell, Cube)>,
     bounds: &(Complex<i32>, Complex<i32>),
 ) -> Complex<i32> {
     let mut new_cursor = start;
@@ -271,7 +214,7 @@ fn move_cursor(
     };
 
     for _ in 0..distance {
-        if let Some((cell, _, _)) = grid.get(&(new_cursor + vector)) {
+        if let Some((cell, _)) = grid.get(&(new_cursor + vector)) {
             if let Cell::Wall = cell {
                 break;
             } else {
@@ -300,51 +243,85 @@ fn move_cursor(
 }
 
 fn move_cursor_on_cube(
-    start: Complex<i32>,
-    direction: &Direction,
     distance: i32,
-    grid: &HashMap<Complex<i32>, (Cell, Cube, Complex<i32>)>,
-    cube: &HashMap<(Cube, Complex<i32>), Complex<i32>>,
-) -> (Complex<i32>, Direction) {
-    let mut new_cursor = start;
-    let mut direction = *direction;
-    let vector = match direction {
-        Direction::Up => UP,
-        Direction::Down => DOWN,
-        Direction::Left => LEFT,
-        Direction::Right => RIGHT,
-    };
-
+    coord: &mut Complex<i32>,
+    direction: &mut Direction,
+    grid: &HashMap<Complex<i32>, (Cell, Cube)>,
+) {
     for _ in 0..distance {
-        if let Some((cell, _, _)) = grid.get(&(new_cursor + vector)) {
-            if let Cell::Wall = cell {
-                break;
-            } else {
-                new_cursor += vector;
-            }
-        } else {
-            // Wrap around cube
-            if let Some((_, face, face_coords)) = grid.get(&new_cursor) {
-                let (new_face, new_dir, new_face_coords) =
-                    (*face).get_new_face_coords(&direction, *face_coords);
+        let vector = match direction {
+            Direction::Up => UP,
+            Direction::Down => DOWN,
+            Direction::Left => LEFT,
+            Direction::Right => RIGHT,
+        };
+        let cache_direction = *direction;
+        let Complex {
+            re: mut new_row,
+            im: mut new_col,
+        } = vector + *coord;
 
-                println!("Going from ({face:?}, {direction:?}) to ({new_face:?}, {new_dir:?})");
-                println!("\t{face_coords} -> {new_face_coords}");
-
-
-                let map_coords = cube.get(&(new_face, new_face_coords)).unwrap();
-                match grid.get(map_coords).unwrap() {
-                    (Cell::Wall, _, _) => break,
-                    (Cell::Path, _, _) => {
-                        direction = new_dir;
-                        new_cursor = *map_coords;
-                    }
+        match direction {
+            Direction::Up => {
+                if new_row < 0 && (WIDTH..WIDTH * 2).contains(&new_col) {
+                    (new_row, new_col) = (new_col + WIDTH * 2, 0);
+                    *direction = Direction::Right;
+                } else if new_row < 0 && (WIDTH * 2..WIDTH * 3).contains(&new_col) {
+                    (new_row, new_col) = (WIDTH * 4 - 1, new_col - WIDTH * 2);
+                } else if new_row == WIDTH * 2 - 1 && (0..WIDTH).contains(&new_col) {
+                    (new_row, new_col) = (new_col + WIDTH, WIDTH);
+                    *direction = Direction::Right;
                 }
-            } else {
-                panic!("Problem wrapping around cube")
+            }
+            Direction::Down => {
+                if new_row >= WIDTH * 4 && (0..WIDTH).contains(&new_col) {
+                    (new_row, new_col) = (0, new_col + WIDTH * 2);
+                } else if new_row == WIDTH && (WIDTH * 2..WIDTH * 3).contains(&new_col) {
+                    (new_row, new_col) = (new_col - WIDTH, WIDTH * 2 - 1);
+                    *direction = Direction::Left;
+                } else if new_row == WIDTH * 3 && (WIDTH..WIDTH * 2).contains(&new_col) {
+                    (new_row, new_col) = (new_col + WIDTH * 2, WIDTH - 1);
+                    *direction = Direction::Left;
+                }
+            }
+            Direction::Right => {
+                if new_col >= WIDTH * 3 && (0..WIDTH).contains(&new_row) {
+                    (new_row, new_col) = (WIDTH * 3 - 1 - new_row, WIDTH * 2 - 1);
+                    *direction = Direction::Left;
+                } else if new_col == WIDTH * 2 && (WIDTH * 2..WIDTH * 3).contains(&new_row) {
+                    (new_row, new_col) = (WIDTH * 3 - 1 - new_row, WIDTH * 3 - 1);
+                    *direction = Direction::Left;
+                } else if new_col == WIDTH * 2 && (WIDTH..WIDTH * 2).contains(&new_row) {
+                    (new_row, new_col) = (WIDTH - 1, new_row + WIDTH);
+                    *direction = Direction::Up;
+                } else if new_col == WIDTH && (WIDTH * 3..WIDTH * 4).contains(&new_row) {
+                    (new_row, new_col) = (WIDTH * 3 - 1, new_row - WIDTH * 2);
+                    *direction = Direction::Up;
+                }
+            }
+            Direction::Left => {
+                if new_col < 0 && (WIDTH * 3..WIDTH * 4).contains(&new_row) {
+                    (new_row, new_col) = (0, new_row - WIDTH * 2);
+                    *direction = Direction::Down;
+                } else if new_col == WIDTH - 1 && (WIDTH..WIDTH * 2).contains(&new_row) {
+                    (new_row, new_col) = (WIDTH * 2, new_row - WIDTH);
+                    *direction = Direction::Down;
+                } else if new_col == WIDTH - 1 && (0..WIDTH).contains(&new_row) {
+                    (new_row, new_col) = (WIDTH * 3 - 1 - new_row, 0);
+                    *direction = Direction::Right;
+                } else if new_col < 0 && (WIDTH * 2..WIDTH * 3).contains(&new_row) {
+                    (new_row, new_col) = (WIDTH * 3 - 1 - new_row, WIDTH);
+                    *direction = Direction::Right;
+                }
             }
         }
-    }
 
-    (new_cursor, direction)
+        if let (Cell::Wall, _) = grid.get(&Complex::new(new_row, new_col)).unwrap() {
+            *direction = cache_direction;
+            break;
+        }
+
+        coord.re = new_row;
+        coord.im = new_col;
+    }
 }

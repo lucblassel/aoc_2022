@@ -21,5 +21,5 @@
 # Skipped day go here!
 ./target/release/aoc-20
 ./target/release/aoc-21
-# Skipped day go here!
+./target/release/aoc-22
 ./target/release/aoc-23
