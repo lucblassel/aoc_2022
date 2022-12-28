@@ -23,3 +23,4 @@
 ./target/release/aoc-21
 ./target/release/aoc-22
 ./target/release/aoc-23
+./target/release/aoc-24
