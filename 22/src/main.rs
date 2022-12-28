@@ -105,6 +105,7 @@ impl Direction {
 }
 
 fn main() {
+    println!("Day 22:");
     let input = include_str!("../inputs/input.txt");
     let mut set_cursor = true;
     let mut parse_password = false;

@@ -31,6 +31,7 @@ impl Display for Cell {
 }
 
 fn main() {
+    println!("Day 24:");
     let input = include_str!("../inputs/input.txt");
 
     let mut grid: HashMap<_, Vec<_>> = HashMap::new();
@@ -79,7 +80,7 @@ fn main() {
     let answer_2_2 = get_shortest_path_2(end, start, bounds, (answer_1 + answer_2_1) % cycle_length, cycle_length, &possible_states).unwrap();
 
     println!("\t1) {answer_1}");
-    println!("\t1) {}", answer_1 + answer_2_1 + answer_2_2);
+    println!("\t2) {}", answer_1 + answer_2_1 + answer_2_2);
 
 }
 
