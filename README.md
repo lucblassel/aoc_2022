@@ -8,6 +8,10 @@ I am using AoC this year as a way to learn Rust, which I have been toying with t
 I used [hyperfine](https://github.com/sharkdp/hyperfine) with warmup to time my solutions for different days, compiled in `release` mode:  
 `hyperfine -N --warmup 100 <executable>`
 
+<p align="center">
+  <img src="./benchmark/benchmarks.svg">
+</p>
+
 **Individual Results**:
 
 ```
